@@ -1,8 +1,21 @@
 const fs = require("fs");
 const path = require("path");
+const os = require("os");
 const utils = require("./utils");
 
+function localDateStr() {
+  const d = new Date();
+  return (
+    d.getFullYear() +
+    "-" +
+    String(d.getMonth() + 1).padStart(2, "0") +
+    "-" +
+    String(d.getDate()).padStart(2, "0")
+  );
+}
+
 async function taskWrite(filename, content) {
+  if (process.env.KS_GUAIKEI_DISABLE_LOG === "1") return;
   if (!filename || typeof filename !== "string") {
     utils.printError("日志文件名必须是非空字符串");
     return;
@@ -21,16 +34,17 @@ async function taskWrite(filename, content) {
   if (safeFilename === "") {
     safeFilename = `log_${Date.now()}`;
   }
-  const outputFilename = path.join(
-    path.dirname(__filename),
-    "..",
-    "..",
+
+  const outputDir = path.join(
+    os.tmpdir(),
+    "kuaishou-guaikei",
     "logs",
-    safeFilename,
+    localDateStr(),
   );
+  const outputFilename = path.join(outputDir, safeFilename);
 
   try {
-    await fs.promises.mkdir(path.dirname(outputFilename), { recursive: true });
+    await fs.promises.mkdir(outputDir, { recursive: true });
     await fs.promises.writeFile(outputFilename, content);
     utils.printSuccess(`  → 已保存到 ${outputFilename}`);
   } catch (error) {
