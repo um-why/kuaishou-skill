@@ -36,7 +36,7 @@ const SCHEMA = {
 };
 
 const AUTH_MESSAGE =
-  "GUAIKEI_API_TOKEN 未配置或格式无效。须为 16-256 位字母、数字、下划线或连字符; 可通过 https://www.guaikei.com 自助开通";
+  "GUAIKEI_API_TOKEN 未配置或格式无效。须为 16-256 位字母、数字、下划线或连字符";
 
 function printHelp() {
   process.stderr.write(

@@ -18,7 +18,7 @@ function skillToken(token) {
   token = (token || "").trim();
   if (!token) {
     utils.printError(
-      "GUAIKEI_API_TOKEN 未配置。可通过 https://www.guaikei.com 自助开通后配置环境变量。",
+      "GUAIKEI_API_TOKEN 未配置",
     );
     return "";
   }
