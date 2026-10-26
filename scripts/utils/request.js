@@ -78,9 +78,15 @@ async function request(options, data = null) {
             const status = res.statusCode;
             const code =
               status >= 500 && status <= 599 ? "HTTP_5xx" : `HTTP_${status}`;
+            const retryable =
+              status === 429 || (status >= 500 && status <= 599);
             finish(
               reject,
-              new ApiError(code, `请求失败, 状态码: ${status}`, true),
+              new ApiError(
+                code,
+                `请求失败, 状态码: ${status}`,
+                !retryable,
+              ),
             );
           }
         });
@@ -119,9 +125,9 @@ async function postJson(path, params, data, token) {
   if (!data || typeof data !== "object") {
     throw new SkillError("DATA_INVALID", "data 必须是对象", true);
   }
-  params.skill_name = skillName();
+  const finalParams = { ...params, skill_name: skillName() };
 
-  const fullPath = `${path}?${querystring.stringify(params)}`;
+  const fullPath = `${path}?${querystring.stringify(finalParams)}`;
   const jsonData = JSON.stringify(data);
   const options = {
     host: constants.BASE_URL,
@@ -144,10 +150,9 @@ async function getJson(path, params, token) {
   if (!params || typeof params !== "object") {
     throw new SkillError("PARAM_INVALID", "params 必须是对象", true);
   }
-  params._ = Date.now();
-  params.skill_name = skillName();
+  const finalParams = { ...params, _: Date.now(), skill_name: skillName() };
 
-  const fullPath = `${path}?${querystring.stringify(params)}`;
+  const fullPath = `${path}?${querystring.stringify(finalParams)}`;
   const options = {
     host: constants.BASE_URL,
     path: fullPath,
@@ -158,7 +163,8 @@ async function getJson(path, params, token) {
 }
 
 /**
- * 创建任务等一次性请求。网络和超时会重试；业务错误码 >= 10 不重试。
+ * 创建任务等一次性请求。网络、超时、429 和 5xx 会重试。
+ * 业务错误码 >= 10 不重试。2 到 9 会重试，创建接口的 2 是「请稍后重试」。
  * @param {string} method
  * @param {string} path
  * @param {object} params
@@ -201,13 +207,17 @@ async function requestApi(
  * @returns {"pending"|"fail"|"retry"}
  */
 function classifyPollError(error) {
-  if (error && String(error.code) === "1") {
-    return "pending";
-  }
+  if (!error) return "retry";
+  if (String(error.code) === "1") return "pending";
   if (
-    error &&
-    (error.noRetry || error.name === "ApiError" || error.name === "AuthError")
+    error.name === "NetworkError" ||
+    error.name === "TimeoutError" ||
+    error.code === "HTTP_429" ||
+    error.code === "HTTP_5xx"
   ) {
+    return "retry";
+  }
+  if (error.noRetry || error.name === "ApiError" || error.name === "AuthError") {
     return "fail";
   }
   return "retry";

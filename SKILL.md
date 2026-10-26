@@ -69,10 +69,10 @@ metadata:
     - name: "评论出参"
       file: "assets/comment_cli_resp.schema.json"
   examples:
-    - "帮我搜快手里「具身智能」的高赞视频 → node scripts/kuaishou/search-cli.js --keyword '具身智能' --sort 2 --limit 20"
-    - "最近一周最新的快手 AI 教程，要 20 条 → node scripts/kuaishou/search-cli.js --keyword 'AI 教程' --sort 1 --time 7 --limit 20"
-    - "这条快手视频评论区在说什么 → node scripts/kuaishou/comment-cli.js --url 'https://www.kuaishou.com/short-video/3xabc' --limit 100"
-    - "这个快手博主最近 20 条作品 → node scripts/kuaishou/post-cli.js --url 'https://www.kuaishou.com/profile/3xabc' --sort 0 --limit 20"
+    - "帮我搜快手里「具身智能」的高赞视频 → node scripts/kuaishou/search-cli.js --keyword \"具身智能\" --sort 2 --limit 20"
+    - "最近一周最新的快手 AI 教程，要 20 条 → node scripts/kuaishou/search-cli.js --keyword \"AI 教程\" --sort 1 --time 7 --limit 20"
+    - "这条快手视频评论区在说什么 → node scripts/kuaishou/comment-cli.js --url \"https://www.kuaishou.com/short-video/3xabc\" --limit 100"
+    - "这个快手博主最近 20 条作品 → node scripts/kuaishou/post-cli.js --url \"https://www.kuaishou.com/profile/3xabc\" --sort 0 --limit 20"
     - "这个快手博主多少粉丝 → node scripts/kuaishou/post-cli.js --url 123456 --limit 0"
 ---
 
@@ -141,7 +141,7 @@ stderr 出现「处理中」表示任务还在跑，等进程退出后再读 std
 
 ## 3. 参数
 
-枚举和数量不在允许范围内时，命令直接失败（退出码 2，`INVALID_ARGS`），不会改成默认值再请求。三个命令都支持 `--help` / `-h`：帮助打在 stderr，退出码 0，stdout 为空。短参数大小写都可以。含空格的关键词写成一个引号参数。完整字段见 `assets/*_cli_req.schema.json` 与 [references/options.md](references/options.md)。
+枚举和数量不在允许范围内时，命令直接失败（退出码 2，`INVALID_ARGS`），不会改成默认值再请求。三个命令都支持 `--help` / `-h`：帮助打在 stderr，退出码 0，stdout 为空，这是正常现象。短参数大小写都可以。含空格的关键词用双引号包成一个参数。完整字段见 `assets/*_cli_req.schema.json` 与 [references/options.md](references/options.md)。
 
 ### 3.1 关键词搜索
 
@@ -170,21 +170,30 @@ stderr 出现「处理中」表示任务还在跑，等进程退出后再读 std
 
 ## 4. 读结果
 
-只读 stdout 的最后一份 JSON。字段以 `assets/output_envelope.schema.json` 和 `assets/*_cli_resp.schema.json` 为准。
+只读 stdout 的最后一份 JSON。`--help` 时 stdout 为空，帮助在 stderr，不要把它当成命令崩溃。字段以 `assets/output_envelope.schema.json` 和 `assets/*_cli_resp.schema.json` 为准。
 
 - 搜索、评论成功时 `results` 是数组
 - 作品成功时 `results` 是对象。`post` 是作品数组，`user` 是博主。`limit` 为 0 时看 `user`
 - 作品视频上的点赞、播放、评论是字符串。搜索和评论里的对应字段是数字
 - 搜索作者有三套标识：视频 `id` 给评论，`user.user_id` 或 `user.url` 给作品，`user.id` 是快手号
 
-退出码：`0` 成功或没有结果；`1` 业务失败、链接不合法或网络失败；`2` 参数不合法；`3` token 缺失或无效。
+| 退出码 | error_code | 怎么处理 |
+| --- | --- | --- |
+| 0 | `OK` / `NO_MATCH` | 没有结果就告诉用户没有匹配内容，不要当成失败重试 |
+| 2 | `INVALID_ARGS` / `INVALID_KEYWORD` | 按上一节改参数后再试一次。关键词缺失或是链接时先问用户 |
+| 1 | `INVALID_URL` | 按路由换命令，或向用户确认这是视频还是主页 |
+| 3 | `AUTH_REQUIRED` / `AUTH_ERROR` | 停止重试，让用户配置 `GUAIKEI_API_TOKEN` |
+| 1 | `TIMEOUT` | 任务仍在处理。告诉用户稍后再试，不要立刻用同一组参数再打 |
+| 1 | `NETWORK_ERROR` / `HTTP_5xx` / `HTTP_429` | 命令内部已经重试过。退出后再失败就告诉用户稍后再试，不要立刻连打 |
+| 1 | 十进制数字，例如 `"12"` | 把 `message` 原样转告。不要把 `"1"` 当成业务失败，那是处理中，命令会自己等 |
+| 1 | `API_ERROR` / `UNKNOWN` | 转告 `message`，建议联系官网 |
 
-`error_code` 是字符串。查询还在处理、次数用尽时是 `TIMEOUT`，不是空结果。接口业务码原样转成十进制字符串，例如 `"12"`。
+`error_code` 是字符串。查询还在处理、次数用尽时是 `TIMEOUT`，不是空结果。
 
 ## 5. 合规
 
 只处理快手公开数据。调用时会把关键词或链接发到 `www.guaikei.com`。不上传本地文件，不登录，不发布。
 
-成功结果默认写到系统临时目录。`KS_GUAIKEI_DISABLE_LOG=1` 可关闭。
+成功结果默认不写文件。需要留底时设置 `KS_GUAIKEI_ENABLE_LOG=1`，文件写到系统临时目录的 `kuaishou-guaikei/logs/`，仅当前用户可读。
 
 开通 token 或人工支持：[快手实时数据获取技能官网](https://www.guaikei.com) ，微信 `13395823479`（备注：快手技能）。

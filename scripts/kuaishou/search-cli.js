@@ -115,7 +115,7 @@ async function main() {
   keyword = validator.normalizeKeyword(keyword);
   if (!validator.isKeywordValid(keyword)) {
     utils.printError(KEYWORD_MESSAGE);
-    emitError("search", "INVALID_KEYWORD", KEYWORD_MESSAGE, 1, startTime, {
+    emitError("search", "INVALID_KEYWORD", KEYWORD_MESSAGE, 2, startTime, {
       command: "search",
       keyword_raw: keywordRaw,
       keyword,
