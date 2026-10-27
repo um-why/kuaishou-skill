@@ -52,16 +52,23 @@ function parseArgs(args, schema) {
   }
 
   let i = 0;
+  let noMoreFlags = false;
   while (i < args.length) {
     let arg = args[i];
     let inlineValue = null;
 
-    if (arg === "--help" || arg === "-h" || arg === "-H") {
+    if (!noMoreFlags && arg === "--") {
+      noMoreFlags = true;
+      i++;
+      continue;
+    }
+
+    if (!noMoreFlags && (arg === "--help" || arg === "-h" || arg === "-H")) {
       result._help = true;
       return result;
     }
 
-    if (arg.startsWith("-")) {
+    if (!noMoreFlags && arg.startsWith("-")) {
       const eq = arg.indexOf("=");
       if (eq > 0) {
         inlineValue = arg.slice(eq + 1);
@@ -70,10 +77,12 @@ function parseArgs(args, schema) {
     }
 
     let matched = null;
-    for (const [flag, def] of Object.entries(schema.flags)) {
-      if (sameFlag(arg, flag) || (def.alias && sameFlag(arg, def.alias))) {
-        matched = { flag, def };
-        break;
+    if (!noMoreFlags) {
+      for (const [flag, def] of Object.entries(schema.flags)) {
+        if (sameFlag(arg, flag) || (def.alias && sameFlag(arg, def.alias))) {
+          matched = { flag, def };
+          break;
+        }
       }
     }
 
@@ -110,7 +119,7 @@ function parseArgs(args, schema) {
         }
         result[def.key] = transformed;
       }
-    } else if (!arg.startsWith("-")) {
+    } else if (noMoreFlags || !arg.startsWith("-")) {
       if (!schema.positionalKey) {
         throw new Error(`未识别的位置参数: ${arg}`);
       }
