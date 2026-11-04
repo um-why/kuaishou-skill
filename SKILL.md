@@ -2,7 +2,7 @@
 name: kuaishou-data-miner
 description: "快手公开数据只读技能：关键词搜视频、博主作品与粉丝数据、视频评论，输出 JSON，不登录不发布。触发词：快手、Kuaishou、kwai、快手搜索、快手评论、快手博主。用户要查快手视频、评论、爆款选题、竞品监控、KOL 筛选或评论舆情时使用；抖音、小红书、B站、微博、公众号不要用本技能。"
 license: MIT
-version: "1.1.1"
+version: 1.1.1
 metadata:
   openclaw:
     emoji: "📷"
@@ -13,7 +13,6 @@ metadata:
       env:
         - GUAIKEI_API_TOKEN
   enabled: true
-  version: "1.1.1"
   type: command
   runtime: "nodejs@16.14.0+"
   requires:
