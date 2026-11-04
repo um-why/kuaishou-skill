@@ -47,7 +47,7 @@ guaikei server (Go)  ← 另有 MCP 同源工具 kuaishou_search/post/comment
 
 | ID | 优先级 | 问题 | 证据 / 影响 |
 | --- | --- | --- | --- |
-| C-01 | P0 | **包月 TOKEN 限额未写入 Skill** | 后端：搜索 ≤30、作品 ≤50、评论 ≤60（`errcode 14`）。Skill/readme 宣传「最多 1W 条」，Agent 易直接打大 limit → 用户困惑、反复重试。 |
+| C-01 | P0 | ~~**包月 TOKEN 限额未写入 Skill**~~ ✅ | 已对齐 douyin-search-claw：文档套餐双上限 + `errcode 14`→`PLAN_LIMIT`（搜索≤30 / 作品≤50 / 评论≤60）。见 1.1.1。 |
 | C-02 | P0 | **计费/余额不足路径未文档化** | `errcode 15` 等；Agent 可能当 `API_ERROR` 乱重试或改参数浪费额度。 |
 | C-03 | P1 | **Skill CLI 不补全缺失 URL，MCP 会补** | `mcp/kuaishou/search.go` `processSearchResults` 会补视频/主页 URL；JS 直出后端原始 data。Agent 链式「搜→评/作品」时可能缺 `url`。 |
 | C-04 | P1 | **关键词特殊字符规则与 MCP 不一致** | MCP 禁 `&`；Skill `isKeywordValid` 不禁。同一产品两通道行为分裂。 |
@@ -97,7 +97,7 @@ guaikei server (Go)  ← 另有 MCP 同源工具 kuaishou_search/post/comment
 
 | ID | 优先级 | 问题 | 证据 / 影响 |
 | --- | --- | --- | --- |
-| P-01 | P1 | **微信手机号硬编码在 Skill/readme** | 大众分发隐私与骚扰风险；应官网客服入口，Skill 只留链接。 |
+| P-01 | P1 | ~~**微信手机号硬编码在 Skill/readme**~~ ✅ | 已改为仅官网入口；`SKILL.md` / `readme.md` 不再含微信手机号。未升版本号。 |
 | P-02 | P1 | **能力表述偏营销** | 「趋势预测」「穿透数据层」等超出只读抓取；信任与合规风险。 |
 | P-03 | P1 | **合规边界对 Agent 偏软** | 已有「公开只读」；缺：不得用于骚扰、批量爬取转售、绕过平台 ToS 的明确拒绝话术模板。 |
 | P-04 | P2 | **TOKEN 获取摩擦高** | 未配置就劝开通正确；但无「沙箱/只读 demo keyword」降低试错成本。 |
@@ -239,6 +239,8 @@ guaikei server (Go)  ← 另有 MCP 同源工具 kuaishou_search/post/comment
 | --- | --- | --- | --- |
 | 2026-11-04 | — | 创建本后档 | 初版深度分析，未改业务代码 |
 | 2026-11-04 | — | 迁至仓库根目录 `todo.md` | 原 `docs/archive/` 副本已移除 |
+| 2026-11-04 | C-01 | 落地套餐双上限 + `PLAN_LIMIT` | 对照 `douyin-search-claw`；版本 1.1.1 |
+| 2026-11-04 | P-01 | 去掉微信手机号 | 仅保留 guaikei.com；不升版本号 |
 
 ---
 
