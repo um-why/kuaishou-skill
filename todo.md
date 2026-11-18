@@ -48,7 +48,7 @@ guaikei server (Go)  ← 另有 MCP 同源工具 kuaishou_search/post/comment
 | ID | 优先级 | 问题 | 证据 / 影响 |
 | --- | --- | --- | --- |
 | C-01 | P0 | ~~**包月 TOKEN 限额未写入 Skill**~~ ✅ | 已对齐 douyin-search-claw：文档套餐双上限 + `errcode 14`→`PLAN_LIMIT`（搜索≤30 / 作品≤50 / 评论≤60）。见 1.1.1。 |
-| C-02 | P0 | **计费/余额不足路径未文档化** | `errcode 15` 等；Agent 可能当 `API_ERROR` 乱重试或改参数浪费额度。 |
+| C-02 | P0 | ~~**计费/余额不足路径未文档化**~~ ✅ | 1.1.2：`INSUFFICIENT_BALANCE` / `RATE_LIMITED` / `DAILY_LIMIT` + SKILL 禁重试。 |
 | C-03 | P1 | **Skill CLI 不补全缺失 URL，MCP 会补** | `mcp/kuaishou/search.go` `processSearchResults` 会补视频/主页 URL；JS 直出后端原始 data。Agent 链式「搜→评/作品」时可能缺 `url`。 |
 | C-04 | P1 | **关键词特殊字符规则与 MCP 不一致** | MCP 禁 `&`；Skill `isKeywordValid` 不禁。同一产品两通道行为分裂。 |
 | C-05 | P1 | **关键词长度计量可能不一致** | Skill 用 `string.length`（UTF-16）；后端 `for range`（rune）。极端字符下 CLI 放行、后端 13，或相反。 |
@@ -57,7 +57,7 @@ guaikei server (Go)  ← 另有 MCP 同源工具 kuaishou_search/post/comment
 | C-08 | P2 | **字段命名混用 camelCase / snake_case** | 如 `collect_count` vs `recToFriendCount`、`forward_count` vs `forwardCount`。schema 已注明，模型仍易写错路径。 |
 | C-09 | P2 | **无视频详情命令** | 已声明；用户要「解析这条视频」只能评论或搜。能力缺口需在 description 更醒目。 |
 | C-10 | P2 | **后端非法枚举静默改写，Skill 严格失败** | 后端 Sort/Time/Duration 非法变 0；Skill 直接 `INVALID_ARGS`。对大众更安全，但直连 API 的其他客户端与 Skill 行为不同——需在官网文档统一说明「开放 API 侧也建议严格」。 |
-| C-11 | P2 | **Create 限流 errcode 2 与「处理中」errcode 1 易混淆** | Skill 创建阶段对 2–9 可重试；查询只把 `1` 当 pending。文档对 Agent 说「十进制数字原样转告」正确，但缺少「常见码表」卡片。 |
+| C-11 | P2 | **Create 限流 errcode 2 与「处理中」errcode 1 易混淆** | 创建：裸 `2`→`RATE_LIMITED`（`noRetry`）；查询只把 `1` 当 pending。文档对 Agent 说「十进制数字原样转告」正确，但缺少「常见码表」卡片。`requestApi` 注释已对齐 noRetry（勿再写 2–9 一律重试）。 |
 | C-12 | P3 | **`omitempty` 导致 0/空字段缺失** | 比较「零赞」需区分缺失与 0；分析脚本易误判。 |
 
 ### 1.2 Agent / Skill 指令层（Cursor、Codex、Workbuddy 等）
@@ -72,8 +72,7 @@ guaikei server (Go)  ← 另有 MCP 同源工具 kuaishou_search/post/comment
 | A-06 | P1 | **SKILL.md 信息密度高、偏中文长文** | ~220 行可接受但接近「全量灌进上下文」。英文优先 Agent（GPT/Claude/Gemini/Grok）对中文路由表遵循率下降；中文模型（GLM/DeepSeek/Kimi）相对更好但仍易漏「limit 0」「不要两个命令都试」。 |
 | A-07 | P1 | **无 AGENTS.md / tools 清单 / 一页纸决策树给「只读 description」的宿主** | 部分宿主只注入 frontmatter description；当前 description 已不错，但缺「禁止事项」与「超时策略」压缩版。 |
 | A-08 | P1 | **无 MCP 入口在本仓库** | guaikei 已有 MCP；大众用 CLI Skill。Cursor/Codex 更爱 MCP tool schema。双栈未说明「何时用 Skill、何时用 MCP」。 |
-| A-09 | P1 | **Windows 引号与 PowerShell 执行差异** | 示例偏 bash；Codex/Cursor 在 Win 上易把中文关键词拆参。缺 PowerShell 示例与「优先 `--keyword=` 内联」硬规则。 |
-| A-10 | P1 | **工作目录约定脆弱** | 「在技能根目录执行」；Agent 常在用户项目 cwd 跑相对路径失败。缺「解析 SKILL 所在目录」或 `package.json` `bin` + `npx`。 |
+| A-09 | P1 | **Windows 引号与 PowerShell 执行差异** | **已做**：`references/faq.md` + SKILL 双壳例与「cmd 只用双引号」（对齐抖音同策略）。 || A-10 | P1 | **工作目录约定脆弱** | 「在技能根目录执行」；Agent 常在用户项目 cwd 跑相对路径失败。缺「解析 SKILL 所在目录」或 `package.json` `bin` + `npx`。 |
 | A-11 | P2 | **成功时打印完整 pretty JSON** | limit 大时 stdout 巨大，Agent 二次摘要失败/截断；缺 `--fields` 或「摘要模式」。 |
 | A-12 | P2 | **readme 营销向，易被 Agent 误读为指令** | 「1W 条」「趋势预测」等与真实能力夸大；若宿主索引全仓 md 会污染。 |
 | A-13 | P2 | **metadata 多宿主字段混杂** | `openclaw` + 自研 `requires`/`schemas`；Cursor 标准 skill 字段更简。兼容性靠「忽略未知」，但缺少各宿主适配说明。 |
@@ -89,7 +88,7 @@ guaikei server (Go)  ← 另有 MCP 同源工具 kuaishou_search/post/comment
 | E-03 | P1 | **BASE_URL 写死，无环境覆盖** | 无法指向 staging；调试与灾备困难。 |
 | E-04 | P2 | **包名/技能名/上报名略乱** | `package.json`/`SKILL` name=`kuaishou-data-miner`；`name.js` fallback=`kuaishou-skill`。统计与支持排查分裂。 |
 | E-05 | P2 | **仅 HTTPS 模块，无代理/自定义 CA 说明** | 企业网络、部分海外 Agent 环境可能失败；错误只见 NETWORK。 |
-| E-06 | P2 | **日志默认关，开后写临时目录** | 大众难找；Agent 更不会设 `KS_GUAIKEI_ENABLE_LOG`。排障弱。 |
+| E-06 | P2 | **日志默认关，开后写临时目录** | 已统一 `GUAIKEI_ENABLE_LOG` / `--save`；大众仍可能难找 TEMP。 |
 | E-07 | P2 | **无 CI（lint/test）** | 对「普罗大众」分发缺质量门禁。 |
 | E-08 | P3 | **依赖零是优点，但也无 schema 运行时校验** | 出参靠约定；后端加字段/改类型不会被发现。 |
 
@@ -241,6 +240,7 @@ guaikei server (Go)  ← 另有 MCP 同源工具 kuaishou_search/post/comment
 | 2026-11-04 | — | 迁至仓库根目录 `todo.md` | 原 `docs/archive/` 副本已移除 |
 | 2026-11-04 | C-01 | 落地套餐双上限 + `PLAN_LIMIT` | 对照 `douyin-search-claw`；版本 1.1.1 |
 | 2026-11-04 | P-01 | 去掉微信手机号 | 仅保留 guaikei.com；不升版本号 |
+| 2026-11-14 | A-09 | P1-10 方向 A：faq + 双壳例 | 版本 1.1.3 |
 
 ---
 
