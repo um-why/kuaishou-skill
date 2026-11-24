@@ -56,25 +56,25 @@ node scripts\kuaishou\search-cli.js --json-args "{\"keyword\":\"AI 教程\",\"so
 node scripts/kuaishou/search-cli.js --json-args '{"keyword":"AI 教程","sort":2,"limit":20}'
 ```
 
-**绝对路径（未 cd 时）**
+**绝对路径（推荐；未 cd / cwd 不是技能根时必用）**
 
-示例按常见 Workbuddy 安装布局；把路径换成本机含 `SKILL.md` 的技能根目录：
+`<SKILL_ROOT>` = 含本技能 `SKILL.md` 的那一层真实目录（以当前会话安装位置为准）。勿套用其它宿主的示例路径，勿用 frontmatter `name` 冒充目录名。
 
 ```bat
 REM cmd
-node "C:\Users\Administrator\.workbuddy\skills\kuaishou-data-miner\scripts\kuaishou\search-cli.js" --keyword "AI 教程" --sort 2 --limit 20
+node "<SKILL_ROOT>\scripts\kuaishou\search-cli.js" --keyword "AI 教程" --sort 2 --limit 20
 ```
 
 ```powershell
 # PowerShell
-node "C:\Users\Administrator\.workbuddy\skills\kuaishou-data-miner\scripts\kuaishou\search-cli.js" --keyword "AI 教程" --sort 2 --limit 20
+node "<SKILL_ROOT>/scripts/kuaishou/search-cli.js" --keyword "AI 教程" --sort 2 --limit 20
 ```
 
-> 成功结果默认不落盘；`--save` 或 `GUAIKEI_ENABLE_LOG=1` 时写系统临时目录 `kuaishou-guaikei/logs/`。旧变量 `KS_GUAIKEI_ENABLE_LOG` 已废弃。
+> 成功结果默认不落盘；`--save`（或 `=true`/`1`）或 `GUAIKEI_ENABLE_LOG=1` 时写系统临时目录 `kuaishou-guaikei/logs/`；`--save=false`/`0` 关闭 CLI 侧落盘（env 仍开时以 env 为准）；非法值报错。旧变量 `KS_GUAIKEI_ENABLE_LOG` 已废弃。
 
 ## FAQ
 
-- **`Cannot find module`**：先 `cd` 到本技能目录，或用上一节绝对路径。
+- **`Cannot find module`**：用上一节 `node "<SKILL_ROOT>/scripts/kuaishou/…"`；或先 `cd` 到 `<SKILL_ROOT>` 再用相对路径。
 - **调用失败**：退出码 3 = token；2 = 参数；1 = 业务/网络等。详见 `SKILL.md` 退出码表与 [options.md](options.md)。
 - **包月超限**：`PLAN_LIMIT`；搜索 ≤30、作品 ≤50、评论 ≤60；禁止同参重试。取数成功或 empty 时，信封顶层可能带 `cost`（花费**估算**：包月为 `1`，按次为条数×单价）；错误响应无此字段。
 

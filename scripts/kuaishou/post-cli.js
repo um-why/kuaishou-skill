@@ -163,9 +163,15 @@ async function main() {
   let postTask = null;
   let cost;
   try {
-    await post.createPostTask(tokenValue, url, sort, limit);
+    const taskId = await post.createPostTask(tokenValue, url, sort, limit);
     utils.printSuccess("获取作品任务创建成功, 正在查询中...");
-    ({ results: postTask, cost } = await post.getPostTask(tokenValue, url, sort, limit));
+    ({ results: postTask, cost } = await post.getPostTask(
+      tokenValue,
+      url,
+      sort,
+      limit,
+      taskId,
+    ));
   } catch (error) {
     utils.printError(`获取作品失败: ${error.message}`);
     emitError(

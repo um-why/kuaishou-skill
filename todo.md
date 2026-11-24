@@ -240,6 +240,7 @@ guaikei server (Go)  ← 另有 MCP 同源工具 kuaishou_search/post/comment
 | 2026-11-04 | — | 迁至仓库根目录 `todo.md` | 原 `docs/archive/` 副本已移除 |
 | 2026-11-04 | C-01 | 落地套餐双上限 + `PLAN_LIMIT` | 对照 `douyin-search-claw`；版本 1.1.1 |
 | 2026-11-04 | P-01 | 去掉微信手机号 | 仅保留 guaikei.com；不升版本号 |
+| 2026-11-23 | — | frontmatter：删 keywords/category，精简 tags | 版本 1.1.4 |
 | 2026-11-14 | A-09 | P1-10 方向 A：faq + 双壳例 | 版本 1.1.3 |
 
 ---

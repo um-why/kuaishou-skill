@@ -187,7 +187,7 @@ async function main() {
   let searchTask = null;
   let cost;
   try {
-    await search.createSearchTask(
+    const taskId = await search.createSearchTask(
       tokenValue,
       keyword,
       sort,
@@ -203,6 +203,7 @@ async function main() {
       time,
       duration,
       limit,
+      taskId,
     ));
   } catch (error) {
     utils.printError(`搜索失败: ${error.message}`);
